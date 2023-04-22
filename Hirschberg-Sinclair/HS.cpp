@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     }
 
     ierr = MPI_Bcast(&ranks[0], num_procs, MPI_INT, root_process, MPI_COMM_WORLD);
-    cout << my_id << " " << ranks[my_id] << endl;
+    // cout << my_id << " " << ranks[my_id] << endl;
 
     int is_local_leader = true;
     int phase = -1;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     {
         phase++;
         d = 0;
-        cout << FCYN("Phase ") << phase << endl;
+        // cout << FCYN("Phase ") << phase << endl;
         int num_hops = 1 << phase;
 
         if (is_local_leader)
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
             ierr = MPI_Send(&message, 1, MPI_2INT, (my_id + 1) % num_procs, send_data_tag, MPI_COMM_WORLD);
             total_num_messages++;
 
-            cout << FBLU("Local leader ") << ranks[my_id] << FBLU(" sent the pitch messages to ") << ranks[(my_id + num_procs - 1) % num_procs] << FBLU(" and ") << ranks[(my_id + 1) % num_procs] << endl;
+            // cout << FBLU("Local leader ") << ranks[my_id] << FBLU(" sent the pitch messages to ") << ranks[(my_id + num_procs - 1) % num_procs] << FBLU(" and ") << ranks[(my_id + 1) % num_procs] << endl;
         }
 
         pair<int, int> inmsg;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
                             ierr = MPI_Send(&inmsg, 1, MPI_2INT, (my_id + num_procs - 1) % num_procs, return_data_tag, MPI_COMM_WORLD);
                             total_num_messages++;
 
-                            cout << ranks[my_id] << FMAG(" sent a message with return_data_tag to ") << ranks[(my_id + num_procs - 1) % num_procs] << endl;
+                            // cout << ranks[my_id] << FMAG(" sent a message with return_data_tag to ") << ranks[(my_id + num_procs - 1) % num_procs] << endl;
                         }
                         else
                         {
@@ -123,12 +123,12 @@ int main(int argc, char *argv[])
                             ierr = MPI_Send(&inmsg, 1, MPI_2INT, (my_id + 1) % num_procs, send_data_tag, MPI_COMM_WORLD);
                             total_num_messages++;
 
-                            cout << ranks[my_id] << FRED(" forwarded a message with send_data_tag from ") << ranks[(my_id + 1) % num_procs] << endl;
+                            // cout << ranks[my_id] << FRED(" forwarded a message with send_data_tag from ") << ranks[(my_id + 1) % num_procs] << endl;
                         }
                     }
                     else
                     {
-                        cout << ranks[my_id] << FYEL(" received a message with send_data_tag from ") << ranks[(my_id + 1) % num_procs] << endl;
+                        // cout << ranks[my_id] << FYEL(" received a message with send_data_tag from ") << ranks[(my_id + 1) % num_procs] << endl;
                         if (inmsg.first < ranks[my_id])
                             ;
 
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
                             ierr = MPI_Send(&inmsg, 1, MPI_2INT, (my_id + 1) % num_procs, return_data_tag, MPI_COMM_WORLD);
                             total_num_messages++;
 
-                            cout << ranks[my_id] << FMAG(" sent a message with return_data_tag to ") << ranks[(my_id + 1) % num_procs] << FMAG(" with num_hops = ") << inmsg.second << endl;
+                            // cout << ranks[my_id] << FMAG(" sent a message with return_data_tag to ") << ranks[(my_id + 1) % num_procs] << FMAG(" with num_hops = ") << inmsg.second << endl;
                         }
                         else
                         {
@@ -147,19 +147,19 @@ int main(int argc, char *argv[])
                             ierr = MPI_Send(&inmsg, 1, MPI_2INT, (my_id + num_procs - 1) % num_procs, send_data_tag, MPI_COMM_WORLD);
                             total_num_messages++;
 
-                            cout << ranks[my_id] << FRED(" forwarded a message with send_data_tag to ") << ranks[(my_id + num_procs - 1) % num_procs] << FRED(" with num_hops = ") << inmsg.second << endl;
+                            // cout << ranks[my_id] << FRED(" forwarded a message with send_data_tag to ") << ranks[(my_id + num_procs - 1) % num_procs] << FRED(" with num_hops = ") << inmsg.second << endl;
                         }
                     }
                 }
                 else
                 {
-                    cout << ranks[my_id] << FCYN(" received a message with return_data_tag from ") << status.MPI_SOURCE << FCYN(" with num_hops = ") << inmsg.second << endl;
+                    // cout << ranks[my_id] << FCYN(" received a message with return_data_tag from ") << status.MPI_SOURCE << FCYN(" with num_hops = ") << inmsg.second << endl;
 
                     if (status.MPI_SOURCE == (my_id + num_procs - 1) % num_procs)
                     {
                         if (inmsg.second == 1 && inmsg.first == ranks[my_id])
                         {
-                            cout << ranks[my_id] << FYEL(" received replies from both sides") << endl;
+                            // cout << ranks[my_id] << FYEL(" received replies from both sides") << endl;
                             d = d + 1;
                         }
                         else
@@ -168,14 +168,14 @@ int main(int argc, char *argv[])
                             ierr = MPI_Send(&inmsg, 1, MPI_2INT, (my_id + 1) % num_procs, return_data_tag, MPI_COMM_WORLD);
                             total_num_messages++;
 
-                            cout << my_id << FGRN(" sent a message with return data tag to ") << (my_id + 1) % num_procs << endl;
+                            // cout << my_id << FGRN(" sent a message with return data tag to ") << (my_id + 1) % num_procs << endl;
                         }
                     }
                     else
                     {
                         if (inmsg.second == 1 && inmsg.first == ranks[my_id])
                         {
-                            cout << ranks[my_id] << FYEL(" received replies from both sides") << endl;
+                            // cout << ranks[my_id] << FYEL(" received replies from both sides") << endl;
                             d = d + 1;
                         }
                         else
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
                             ierr = MPI_Send(&inmsg, 1, MPI_2INT, (my_id + num_procs - 1) % num_procs, return_data_tag, MPI_COMM_WORLD);
                             total_num_messages++;
 
-                            cout << my_id << FGRN(" sent a message with return data tag to ") << (my_id + num_procs - 1) % num_procs << endl;
+                            // cout << my_id << FGRN(" sent a message with return data tag to ") << (my_id + num_procs - 1) % num_procs << endl;
                         }
                     }
                 }
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 
         if (d != 2)
         {
-            cout << FRED("not a leader ") << ranks[my_id] << endl;
+            // cout << FRED("not a leader ") << ranks[my_id] << endl;
             is_local_leader = false;
         }
 
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 
     if (is_local_leader)
     {
-        cout << ranks[my_id] << FGRN(" is the leader") << endl;
+        // cout << ranks[my_id] << FGRN(" is the leader") << endl;
         ierr = MPI_Send(&ranks[my_id], 1, MPI_INT, (my_id + 1) % num_procs, final_decision_data_tag, MPI_COMM_WORLD);
         total_num_messages++;
 
@@ -219,13 +219,13 @@ int main(int argc, char *argv[])
         total_num_messages++;
     }
 
-    cout << FGRN("For ") << my_id << FGRN(" the leader is ") << who_leader << endl;
+    // cout << FGRN("For ") << my_id << FGRN(" the leader is ") << who_leader << endl;
 
     int final_total = 0;
     MPI_Reduce(&total_num_messages, &final_total, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if (my_id == root_process)
-        cout << "Total number of messages exchanged = " << final_total << endl;
+        cout << final_total << endl;
 
     ierr = MPI_Finalize();
 }
