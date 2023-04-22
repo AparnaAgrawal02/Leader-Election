@@ -1,119 +1,82 @@
-#include "mpi.h"
+//peterson
+// The algorithm rst computes the smallest ID and
+// makes it known to each process, then the process
+// with that ID becomes leader and all others are
+// defeated.
+#include <stdio.h>
+#include <mpi.h>
 #include <iostream>
-#include <stdlib.h>
+#include <time.h>
+
 using namespace std;
-
-#define RST "\x1B[0m"
-#define KRED "\x1B[31m"
-#define KGRN "\x1B[32m"
-#define KYEL "\x1B[33m"
-#define KBLU "\x1B[34m"
-#define KMAG "\x1B[35m"
-#define KCYN "\x1B[36m"
-#define KWHT "\x1B[37m"
-
-#define FRED(x) KRED x RST
-#define FGRN(x) KGRN x RST
-#define FYEL(x) KYEL x RST
-#define FBLU(x) KBLU x RST
-#define FMAG(x) KMAG x RST
-#define FCYN(x) KCYN x RST
-#define FWHT(x) KWHT x RST
-
-int myrandom(int i)
-{
-    return rand() % i;
-}
 
 int main(int argc, char *argv[])
 {
-    int num_procs, rank, ierr;
-    int min, lcounter;
 
-    double t1, t2;
+    int rank, size;
+    double start,end;
+    int leader_id, initiator, participant = 0, relayer = 0, simulation = 1, message_right[2], message_left[2], message[2], leader_rank;
+    int id, leader = 0, num_messages = 0, phase = 0;
+    MPI_Init(&argc, &argv);
+    MPI_Request send_request, recv_request;
+    MPI_Status Stat;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    srand(time(NULL));
 
-    int inmsg1; // incoming msg from right
-    int inmsg2; // incoming msg from left
-    int msg;    // outgoing msg
+    message[0] = rank;
+    message[1] = 0; // Phase
+    start = MPI_Wtime(); 
+    while (simulation)
+    { // SEND MEESAGE
+        //NonBlocking
+        //cout<<(rank + 1) % size;
+        MPI_Isend(&message, 2, MPI_INT, (rank + 1) % size, 1, MPI_COMM_WORLD, &send_request);
+        MPI_Recv(&message_right, 2, MPI_INT, (rank - 1 + size) % size, 1, MPI_COMM_WORLD, &Stat);
+        //cout<<(rank - 1 + rank) % size;
+        MPI_Isend(&message, 2, MPI_INT, (rank - 1 + size) % size, 1, MPI_COMM_WORLD, &send_request);
+        MPI_Recv(&message_left, 2, MPI_INT, (rank + 1) % size, 1, MPI_COMM_WORLD, &Stat);
 
-    MPI_Status status;
-    MPI_Request send_req, recv_req;
-
-    ierr = MPI_Init(&argc, &argv);
-
-    bool terminated = false;
-    bool passive = false;
-
-    if (ierr != 0)
-    {
-        cout << "Error starting MPI." << endl;
-        MPI_Abort(MPI_COMM_WORLD, ierr);
-    }
-
-    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // my ID
-
-    t1 = MPI_Wtime();
-    msg = rank;
-
-    while (!terminated)
-    {
-        // receive ID with counter from left and right
-        if (rank == 0)
-        {
-            MPI_Isend(&msg, 1, MPI_INT, 1, 1, MPI_COMM_WORLD, &send_req);
-            MPI_Recv(&inmsg1, 1, MPI_INT, num_procs - 1, 1, MPI_COMM_WORLD, &status);
-            MPI_Isend(&msg, 1, MPI_INT, num_procs - 1, 1, MPI_COMM_WORLD, &send_req);
-            MPI_Recv(&inmsg2, 1, MPI_INT, 1, 1, MPI_COMM_WORLD, &status);
+        if(message_left[1] == -1){
+            simulation = 0;
         }
-        else if (rank == num_procs - 1)
-        {
-            MPI_Isend(&msg, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, &send_req);
-            MPI_Recv(&inmsg1, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &status);
-            MPI_Isend(&msg, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &send_req);
-            MPI_Recv(&inmsg2, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, &status);
+        else if (message_right[1]== -1){
+           simulation = 0;
         }
+
+        // if relayer
+        if (relayer)
+        {
+            MPI_Send(&message_right, 2, MPI_INT, (rank - 1 + size) % size, 1, MPI_COMM_WORLD);
+            MPI_Send(&message_left, 2, MPI_INT, (rank + 1) % size, 1, MPI_COMM_WORLD);
+        }
+
         else
         {
-            MPI_Isend(&msg, 1, MPI_INT, rank + 1, 1, MPI_COMM_WORLD, &send_req);
-            MPI_Recv(&inmsg1, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &status);
-            MPI_Isend(&msg, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &send_req);
-            MPI_Recv(&inmsg2, 1, MPI_INT, rank + 1, 1, MPI_COMM_WORLD, &status);
-        }
+            if (message_left[0] < rank || message_right[0] < rank)
+            {
+                relayer = 1;
+            }
+            else if (message_left[0] == rank && message_right[0] == rank)
+            {   //simulation = 0;
+                cout << "process " << rank << " become leader" << endl;
+                message[0] = rank;
+                message [1] = -1;
+            
+            }
+            else{
 
-        // forward the message if passive
-        if (passive)
-        {
-            if (rank == 0)
-            {
-                MPI_Send(&inmsg1, 1, MPI_INT, 1, 1, MPI_COMM_WORLD);
-                MPI_Send(&inmsg2, 1, MPI_INT, num_procs - 1, 1, MPI_COMM_WORLD);
-            }
-            else if (rank == num_procs - 1)
-            {
-                MPI_Send(&inmsg1, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
-                MPI_Send(&inmsg2, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD);
-            }
-            else
-            {
-                MPI_Send(&inmsg1, 1, MPI_INT, rank + 1, 1, MPI_COMM_WORLD);
-                MPI_Send(&inmsg2, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD);
+                message[1]+=1;
             }
         }
-        else
-        {
-            if (inmsg1 < rank || inmsg2 < rank)
-                passive = true;
-            else if (inmsg1 == rank && inmsg2 == rank)
-            {
-                terminated = true;
-                cout << "Node " << rank << " elected as a leader" << endl;
-                t2 = MPI_Wtime();
-                cout << "Elapsed time: " << (t2 - t1) << " seconds" << endl;
-            }
-        }
-
-        ierr = MPI_Bcast(&terminated, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        //MPI_Recv(&simulation, 1, MPI_INT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &Stat);
     }
-    MPI_Finalize();
+    end = MPI_Wtime(); 
+	
+cout<<"Process "<<rank<<" ended "<<endl;
+MPI_Finalize();
+
+if (rank ==0){
+    cout<<"Time taken: "<< end - start <<endl;
+}
 }
