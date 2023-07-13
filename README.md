@@ -1,3 +1,4 @@
+Refer REPORT: https://github.com/AparnaAgrawal02/Leader-Election/blob/main/Leader_Election.pdf
 # Leader-Election
     Review, Implementation and Analysis
     Project in Distributed Systems
